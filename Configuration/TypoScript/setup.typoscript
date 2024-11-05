@@ -1,22 +1,22 @@
 manifest = PAGE
 manifest {
-    typeNum = 835
-    config {
-        no_cache = 0
-        sendCacheHeaders = 1
-        debug = 0
-        admPanel = 0
-        disableAllHeaderCode = 1
-        additionalHeaders.10 {
-            header = Content-Type: application/json; charset=utf-8
-            replace = 1
-        }
+  typeNum = 835
+  config {
+    no_cache = 0
+    sendCacheHeaders = 1
+    debug = 0
+    admPanel = 0
+    disableAllHeaderCode = 1
+    additionalHeaders.10 {
+      header = Content-Type: application/json; charset=utf-8
+      replace = 1
     }
+  }
 
-    10 = USER
-    10 {
-        userFunc = FriendsOfTYPO3\PwaManifest\Service\ConfigurationService->provideConfiguration
-    }
+  10 = USER
+  10 {
+    userFunc = FriendsOfTYPO3\PwaManifest\Service\ConfigurationService->provideConfiguration
+  }
 }
 
 ##############
@@ -24,21 +24,16 @@ manifest {
 ##############
 page = PAGE
 page {
-    headerData {
-        198765 = TEXT
-        198765.value = <link rel="manifest" href="/?type=835">
+  headerData {
+    198765 = TEXT
+    198765.value = <link rel="manifest" href="/?type=835">
+  }
+
+  jsFooterInline {
+    198765 = TEXT
+    198765 {
+      data = path : EXT:pwa_manifest/Resources/Public/JavaScript/sw.js
+      wrap = if ('serviceWorker' in navigator) { window.addEventListener('load', function() { navigator.serviceWorker.register('/|'); }); }
     }
-    jsFooterInline {
-        198765 = COA
-        198765 {
-            10 = TEXT
-            10.value (
-                if ('serviceWorker' in navigator) {
-                  window.addEventListener('load', function() {
-                    navigator.serviceWorker.register('/typo3conf/ext/pwa_manifest/Public/Javascript/sw.js');
-                  });
-                }
-            )
-        }
-    }
+  }
 }
