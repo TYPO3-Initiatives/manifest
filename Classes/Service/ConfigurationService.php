@@ -5,10 +5,7 @@ declare(strict_types=1);
 namespace FriendsOfTYPO3\PwaManifest\Service;
 
 use Psr\Http\Message\ServerRequestInterface;
-use Symfony\Component\Config\Resource\FileResource;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
-use TYPO3\CMS\Core\Core\Environment;
-use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Resource\Exception\InvalidFileException;
 use TYPO3\CMS\Core\Resource\Exception\ResourceDoesNotExistException;
 use TYPO3\CMS\Core\Resource\Folder;
@@ -99,7 +96,7 @@ class ConfigurationService
         $resourceFactory = GeneralUtility::makeInstance(ResourceFactory::class);
         $file = $resourceFactory->retrieveFileOrFolderObject($src);
         // If the file is not found , we return an empty string
-        if($file === null || $file instanceof Folder) {
+        if ($file === null || $file instanceof Folder) {
             return '';
         }
         return $file->getPublicUrl();
@@ -125,10 +122,12 @@ class ConfigurationService
                     'short_name' => $siteConfiguration["manifestShortcuts{$i}ShortName"] ?? '',
                     'description' => $siteConfiguration["manifestShortcuts{$i}Description"] ?? '',
                     'url' => $contentObject->typoLink_URL(['parameter' => $siteConfiguration["manifestShortcuts{$i}Url"] ?? '', 'forceAbsoluteUrl' => true]),
-                    'icons' => array_filter([
-                        'src' => $this->getPathForSrc($siteConfiguration["manifestShortcuts{$i}IconSrc"] ?? ''),
-                        'sizes' => $siteConfiguration["manifestShortcuts{$i}IconSizes"] ?? ''
-                    ])
+                    'icons' => [
+                        array_filter([
+                            'src' => $this->getPathForSrc($siteConfiguration["manifestShortcuts{$i}IconSrc"] ?? ''),
+                            'sizes' => $siteConfiguration["manifestShortcuts{$i}IconSizes"] ?? ''
+                        ])
+                    ]
                 ]);
             }
         }
