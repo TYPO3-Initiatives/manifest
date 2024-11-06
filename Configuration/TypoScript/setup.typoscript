@@ -26,7 +26,16 @@ page = PAGE
 page {
   headerData {
     198765 = TEXT
-    198765.value = <link rel="manifest" href="/?type=835">
+    198765 {
+      value.typolink {
+        parameter = 1
+        additionalParams = &type=835
+        returnLast = url
+      }
+      wrap = <link rel="manifest" href="|">
+    }
+
+
   }
 
   jsFooterInline {

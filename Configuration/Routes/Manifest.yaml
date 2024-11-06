@@ -1,0 +1,5 @@
+routeEnhancers:
+  PageTypeSuffix:
+    type: PageType
+    map:
+      'site.webmanifest': 835
