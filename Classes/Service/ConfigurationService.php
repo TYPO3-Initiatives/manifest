@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace FriendsOfTYPO3\PwaManifest\Service;
 
+use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
-use TYPO3\CMS\Core\Http\ServerRequest;
+use TYPO3\CMS\Core\Resource\Exception\InvalidFileException;
+use TYPO3\CMS\Core\Resource\Exception\ResourceDoesNotExistException;
+use TYPO3\CMS\Core\Resource\Folder;
+use TYPO3\CMS\Core\Resource\ResourceFactory;
 use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\Utility\PathUtility;
 use TYPO3\CMS\Frontend\ContentObject\ContentObjectRenderer;
+use function array_filter;
 
 /***
  *
@@ -26,23 +32,31 @@ use TYPO3\CMS\Frontend\ContentObject\ContentObjectRenderer;
  */
 class ConfigurationService
 {
+    private ?ServerRequestInterface $request = null;
+
     /**
+     * @param string $content
+     * @param array $conf
+     * @param ServerRequestInterface $request
      * @return string
+     * @throws InvalidFileException
+     * @throws ResourceDoesNotExistException
      */
-    public function provideConfiguration(): string
+    public function provideConfiguration(string $content, array $conf, ServerRequestInterface $request): string
     {
+        $this->request = $request;
         $siteConfiguration = $this->getSite()->getConfiguration();
         $settings = [
             'short_name' => $siteConfiguration['manifestShortName'] ?? '',
             'name' => $siteConfiguration['manifestName'] ?? '',
             'icons' => [
                 [
-                    'src' => $siteConfiguration['manifestSmallIconSource'] ?? '',
+                    'src' => $this->getPathForSrc($siteConfiguration['manifestSmallIconSource'] ?? ''),
                     'type' => $siteConfiguration['manifestSmallIconType'] ?? '',
                     'sizes' => $siteConfiguration['manifestSmallIconSizes'] ?? '',
                 ],
                 [
-                    'src' => $siteConfiguration['manifestBigIconSource'] ?? '',
+                    'src' => $this->getPathForSrc($siteConfiguration['manifestBigIconSource'] ?? ''),
                     'type' => $siteConfiguration['manifestBigIconType'] ?? '',
                     'sizes' => $siteConfiguration['manifestBigIconSizes'] ?? '',
                 ]
@@ -58,6 +72,42 @@ class ConfigurationService
         return json_encode($settings);
     }
 
+    /**
+     * @return Site
+     */
+    protected function getSite(): Site
+    {
+        return $this->request->getAttribute('site');
+    }
+
+    /**
+     * @param string $src
+     * @return string
+     * @throws InvalidFileException
+     * @throws ResourceDoesNotExistException
+     */
+    protected function getPathForSrc(string $src): string
+    {
+        // If the src is an extension path, we need to get the public path
+        if (PathUtility::isExtensionPath($src)) {
+            return PathUtility::getPublicResourceWebPath($src);
+        }
+        // If not an extension path, we need to get the public path of the file
+        $resourceFactory = GeneralUtility::makeInstance(ResourceFactory::class);
+        $file = $resourceFactory->retrieveFileOrFolderObject($src);
+        // If the file is not found , we return an empty string
+        if ($file === null || $file instanceof Folder) {
+            return '';
+        }
+        return $file->getPublicUrl();
+    }
+
+    /**
+     * @param array $siteConfiguration
+     * @return array
+     * @throws InvalidFileException
+     * @throws ResourceDoesNotExistException
+     */
     protected function getShortcutsConfiguration(array $siteConfiguration): array
     {
         $contentObject = GeneralUtility::makeInstance(ContentObjectRenderer::class);
@@ -67,15 +117,17 @@ class ConfigurationService
                 ($siteConfiguration["manifestShortcuts{$i}Name"] ?? '') !== '' &&
                 ($siteConfiguration["manifestShortcuts{$i}Url"] ?? '') !== ''
             ) {
-                $shortcuts[] = \array_filter([
+                $shortcuts[] = array_filter([
                     'name' => $siteConfiguration["manifestShortcuts{$i}Name"] ?? '',
                     'short_name' => $siteConfiguration["manifestShortcuts{$i}ShortName"] ?? '',
                     'description' => $siteConfiguration["manifestShortcuts{$i}Description"] ?? '',
                     'url' => $contentObject->typoLink_URL(['parameter' => $siteConfiguration["manifestShortcuts{$i}Url"] ?? '', 'forceAbsoluteUrl' => true]),
-                    'icons' => \array_filter([
-                        'src' => $siteConfiguration["manifestShortcuts{$i}IconSrc"] ?? '',
-                        'sizes' => $siteConfiguration["manifestShortcuts{$i}IconSizes"] ?? ''
-                    ])
+                    'icons' => [
+                        array_filter([
+                            'src' => $this->getPathForSrc($siteConfiguration["manifestShortcuts{$i}IconSrc"] ?? ''),
+                            'sizes' => $siteConfiguration["manifestShortcuts{$i}IconSizes"] ?? ''
+                        ])
+                    ]
                 ]);
             }
         }
@@ -89,21 +141,5 @@ class ConfigurationService
     protected function getExtensionConfiguration(): ExtensionConfiguration
     {
         return GeneralUtility::makeInstance(ExtensionConfiguration::class);
-    }
-
-    /**
-     * @return ServerRequest
-     */
-    protected function getServerRequest(): ServerRequest
-    {
-        return $GLOBALS['TYPO3_REQUEST'];
-    }
-
-    /**
-     * @return Site
-     */
-    protected function getSite(): Site
-    {
-        return $this->getServerRequest()->getAttribute('site');
     }
 }
